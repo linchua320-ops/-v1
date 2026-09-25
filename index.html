@@ -392,6 +392,7 @@ table.sigtab .agentname{font-weight:800; font-size:13px; margin-bottom:2px;}
       <input type="text" id="qaNameInput" placeholder="例：王小姐 淋浴拉門" style="width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:15px;font-family:inherit;">
     </div>
     <button class="btn btn-primary" id="qaSaveBtn" style="display:flex;margin-bottom:10px;">儲存名稱</button>
+    <button class="btn" id="qaDupBtn" style="display:flex;margin-bottom:10px;background:var(--primary-light);color:var(--primary-dark);border:1.5px solid var(--primary);">⧉ 複製此報價單</button>
     <button class="btn" id="qaDeleteBtn" style="display:flex;margin-bottom:10px;background:var(--danger-light);color:var(--danger);border:1.5px solid var(--danger);">🗑 刪除此報價單</button>
     <button class="btn" id="qaCancelBtn" style="display:flex;background:none;color:var(--muted);border:none;box-shadow:none;">取消</button>
   </div>
@@ -3364,8 +3365,8 @@ function newQuote(typeKey){
     customer:{ company:'', contact:'', tel:'', mobile:'', fax:'', address:'', deliveryNote:'依公司派工行程另行通知', note:'' },
     items:[ newItem() ],
     extraList: extraList,
-    agentName: '',
-    agentPhone: '',
+    agentName: STATE.settings.agentName || '',
+    agentPhone: STATE.settings.agentPhone || '',
     termsItems: (t.defaultTermsList||[]).map(function(txt){ return {id:uid('ti'), text:txt, enabled:true}; }),
     plainNotes: t.defaultPlainNote||'',
     terms: t.defaultTerms,
@@ -3680,6 +3681,22 @@ function bindQaModal(){
     saveQuote(q, function(){
       closeQaModal();
       toast('已更新名稱');
+      render();
+    });
+  };
+  document.getElementById('qaDupBtn').onclick = function(){
+    if(!qaTargetId) return;
+    var q = STATE.quotes.find(function(x){ return x.id===qaTargetId; });
+    if(!q) return;
+    var copy = JSON.parse(JSON.stringify(q));
+    copy.id = uid('q');
+    copy.title = (q.title ? q.title+' ' : '') + '(複製)';
+    copy.createdAt = Date.now();
+    copy.updatedAt = Date.now();
+    saveQuote(copy, function(){
+      STATE.quotes.unshift(copy);
+      closeQaModal();
+      toast('已複製一份');
       render();
     });
   };

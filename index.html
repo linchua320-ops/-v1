@@ -525,7 +525,8 @@ var TYPES = {
     hasFilm:false,
     extraFixed:[
       {key:'bodyInstall', name:'整體衛浴安裝費', note:'整體衛浴主體結構安裝', price:0},
-      {key:'equipInstall', name:'衛浴設備安裝費', note:'含衛浴設備安裝', price:0}
+      {key:'equipInstall', name:'衛浴設備安裝費', note:'含衛浴設備安裝', price:0},
+      {key:'removal', name:'拆除＋清運費', note:'舊衛浴拆除及清運', price:3000}
     ],
     showTax:false,
     totalLabel:'整體衛浴專案總計',
@@ -1106,7 +1107,7 @@ function ensureWholeBody(q){
   if(!q.wholeBody.specs){
     q.wholeBody.specs = { size:'', material:'', baseTexture:'', wallTexture:'', wallColor:'', wallHeight:'' };
   }
-  // 舊版建立的整體衛浴報價單沒有「整體衛浴安裝費／衛浴設備安裝費」兩個欄位，補上（原有細項一律保留）
+  // 舊版建立的整體衛浴報價單缺少的固定細項（整體衛浴安裝費／衛浴設備安裝費／拆除＋清運費）補上，原有細項一律保留
   if(Array.isArray(q.extraList)){
     TYPES.whole.extraFixed.forEach(function(e){
       if(!q.extraList.some(function(x){ return x.key===e.key; })){

@@ -461,7 +461,8 @@ var TYPES = {
       {key:'sillProcess', name:'門檻加工費', note:'特殊裁切／洗孔', price:600},
       {key:'addMaterial', name:'追加補料', note:'', price:0},
       {key:'addWork', name:'追加工項', note:'', price:0},
-      {key:'removal', name:'拆除＋清運費', note:'依件計價', price:3000},
+      {key:'doorRemove', name:'舊拉門拆除費', note:'安裝時當場拆除（非專程）', price:1500},
+      {key:'doorHaul', name:'舊拉門運棄費', note:'非專程', price:1500},
       {key:'shipping', name:'搬運費', note:'依樓層計價', price:100}
     ],
     showTax:true,
@@ -493,7 +494,15 @@ var TYPES = {
     key:'toilet', label:'一般衛浴產品估價單', short:'一般衛浴', icon:ico('toilet',24),
     desc:'馬桶、扶手、龍頭等單項產品報價',
     hasFilm:false,
-    extraFixed:[ {key:'removal', name:'拆除＋清運費', note:'舊品拆除清運費', price:2000} ],
+    extraFixed:[
+      {key:'rmToilet',  name:'舊馬桶拆除費', note:'非專程', price:800},
+      {key:'hlToilet',  name:'舊馬桶運棄費', note:'非專程', price:1800},
+      {key:'rmBasin',   name:'舊面盆拆除費', note:'非專程，90cm 內', price:800},
+      {key:'hlBasin',   name:'舊面盆運棄費', note:'非專程，90cm 內', price:1800},
+      {key:'rmCabinet', name:'舊瓷盆浴櫃拆除費', note:'非專程，90cm 內', price:300},
+      {key:'hlCabinet', name:'舊瓷盆浴櫃運棄費', note:'非專程，90cm 內', price:1500},
+      {key:'hlSmall',   name:'舊品運棄費（掛件／暖風機／換氣扇／電腦馬桶座）', note:'非專程', price:300}
+    ],
     showTax:false,
     totalLabel:'專案總計(含稅)',
     defaultTermsList:[
@@ -525,8 +534,7 @@ var TYPES = {
     hasFilm:false,
     extraFixed:[
       {key:'bodyInstall', name:'整體衛浴安裝費', note:'整體衛浴主體結構安裝', price:0},
-      {key:'equipInstall', name:'衛浴設備安裝費', note:'含衛浴設備安裝', price:0},
-      {key:'removal', name:'拆除＋清運費', note:'舊衛浴拆除及清運', price:3000}
+      {key:'equipInstall', name:'衛浴設備安裝費', note:'含衛浴設備安裝', price:0}
     ],
     showTax:false,
     totalLabel:'整體衛浴專案總計',
@@ -1107,7 +1115,7 @@ function ensureWholeBody(q){
   if(!q.wholeBody.specs){
     q.wholeBody.specs = { size:'', material:'', baseTexture:'', wallTexture:'', wallColor:'', wallHeight:'' };
   }
-  // 舊版建立的整體衛浴報價單缺少的固定細項（整體衛浴安裝費／衛浴設備安裝費／拆除＋清運費）補上，原有細項一律保留
+  // 舊版建立的整體衛浴報價單沒有「整體衛浴安裝費／衛浴設備安裝費」兩個欄位，補上（原有細項一律保留）
   if(Array.isArray(q.extraList)){
     TYPES.whole.extraFixed.forEach(function(e){
       if(!q.extraList.some(function(x){ return x.key===e.key; })){
@@ -1672,11 +1680,28 @@ function bindWholeBodyEvents(v, q){
     };
   });
 }
+// 依 115.04.13 拆除／運棄費用調整：舊報價單補上目前版本的固定細項（未勾選）；
+// 舊的「拆除＋清運費」若沒有勾選也沒有數量就移除，有使用的保留原金額不動
+function ensureFixedExtras(q){
+  var t = TYPES[q.type];
+  if(!t || !Array.isArray(q.extraList)) return;
+  var fixedKeys = t.extraFixed.map(function(e){ return e.key; });
+  q.extraList = q.extraList.filter(function(x){
+    if(x.key!=='removal' || fixedKeys.indexOf('removal')>=0) return true;
+    return x.custom || x.enabled || (Number(x.qty)||0) > 0;
+  });
+  t.extraFixed.forEach(function(e){
+    if(!q.extraList.some(function(x){ return x.key===e.key; })){
+      q.extraList.push(newExtraEntry(e.key, e.name, e.note, e.price, false));
+    }
+  });
+}
 function renderExtraCard(q){
   migrateExtra(q);
+  ensureFixedExtras(q);
   var t = TYPES[q.type];
   var rows = (q.extraList||[]).map(function(e){ return extraRowHTML(e); }).join('');
-  return '<div class="card"><h2>'+(t.key==='door'?'安裝加項':'拆除／清運')+' <span class="cnt">(勾選要顯示的項目，可另外手動新增)</span></h2>'+
+  return '<div class="card"><h2>'+(t.key==='door'?'安裝加項':t.key==='toilet'?'拆除／運棄（非專程）':'安裝加項')+' <span class="cnt">(勾選要顯示的項目，可另外手動新增)</span></h2>'+
     '<div id="extraWrap">'+rows+'</div>'+
     '<button class="addbtn" id="btnAddExtra" style="margin-top:8px;">＋ 手動新增項目</button>'+
   '</div>';
